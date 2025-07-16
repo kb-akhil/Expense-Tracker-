@@ -1,5 +1,6 @@
 📊 Personal Expense Tracker
-A web-based Personal Expense Tracker built using Flask, Bootstrap, and AWS DynamoDB. It helps users set a monthly budget, add expenses by category, and view summaries with charts — all stored securely on AWS.
+
+-> A web-based Personal Expense Tracker built using Flask, Bootstrap, and AWS DynamoDB. It helps users set a monthly budget, add expenses by category, and view summaries with charts — all stored securely on AWS.
 
 🧰 Tech Stack
 | Component  | Technology                     |
