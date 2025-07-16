@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --success-color: #4cc9f0;
+      --danger-color: #f72585;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+    }
+    
+    body {
+      background-color: #f5f7fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: none;
+      transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .card-header {
+      border-radius: 12px 12px 0 0 !important;
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      border-color: var(--secondary-color);
+    }
+    
+    .summary-card {
+      background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+      color: white;
+    }
+    
+    .expense-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .expense-item {
+      border-left: 4px solid var(--primary-color);
+      transition: all 0.2s ease;
+    }
+    
+    .expense-item:hover {
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+    
+    .category-badge {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .progress {
+      height: 10px;
+      border-radius: 5px;
+    }
+    
+    .progress-bar {
+      background-color: var(--primary-color);
+    }
+    
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+    
+    .budget-alert {
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .category-color-1 { background-color: #4361ee; }
+    .category-color-2 { background-color: #3f37c9; }
+    .category-color-3 { background-color: #4cc9f0; }
+    .category-color-4 { background-color: #4895ef; }
+    .category-color-5 { background-color: #560bad; }
+    .category-color-6 { background-color: #7209b7; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-wallet me-2"></i>Expense Tracker
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#"><i class="fas fa-home me-1"></i> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-chart-pie me-1"></i> Reports</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-cog me-1"></i> Settings</a>
+          </li>
+        </ul> -->
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Budget Setup Section (shown only if no budget set) -->
+    <div id="budgetSetup" class="card mb-4" style="display: none;">
+      <div class="card-header">
+        <span><i class="fas fa-money-bill-wave me-2"></i>Setup Your Budget</span>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info budget-alert">
+          <h5><i class="fas fa-info-circle me-2"></i>Welcome to Expense Tracker!</h5>
+          <p class="mb-0">To get started, please set your monthly budget.</p>
+        </div>
+        <form id="initialBudgetForm" action="/set-budget" method="POST">
+          <div class="mb-3">
+            <label class="form-label">Monthly Budget (₹)</label>
+            <input type="number" name="budget" class="form-control" placeholder="e.g. 25000" required />
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-2"></i>Set Budget & Get Started
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Content (shown only if budget is set) -->
+    <div id="mainContent">
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card mb-4">
+            <div class="card-header">
+              <span><i class="fas fa-chart-pie me-2"></i>Budget Settings</span>
+            </div>
+            <div class="card-body">
+              <form action="/set-budget" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">Monthly Budget (₹)</label>
+                  <input type="number" name="budget" class="form-control" placeholder="25000" required />
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="fas fa-save me-2"></i>Update Budget
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span><i class="fas fa-pencil-alt me-2"></i>Add Expense</span>
+            </div>
+            <div class="card-body">
+              <form action="/add-expense" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">Category</label>
+                  <select class="form-select" name="category" required>
+                    <option value="" selected disabled>Select category</option>
+                    <option value="Food">Food</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Rent">Rent</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Amount (₹)</label>
+                  <input type="number" name="amount" class="form-control" placeholder="0.00" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Date</label>
+                  <input type="date" name="date" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Description (Optional)</label>
+                  <textarea class="form-control" name="description" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="fas fa-plus me-2"></i>Add Expense
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-8">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-chart-line me-2"></i>Monthly Overview</span>
+              <span class="badge bg-light text-dark" id="currentMonth">July 2023</span>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="card summary-card mb-3">
+                    <div class="card-body text-center">
+                      <h6 class="card-subtitle mb-2">Budget</h6>
+                      <h4 class="card-title" id="budgetAmount">₹0</h4>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card summary-card mb-3">
+                    <div class="card-body text-center">
+                      <h6 class="card-subtitle mb-2">Spent</h6>
+                      <h4 class="card-title" id="spentAmount">₹0</h4>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card summary-card mb-3">
+                    <div class="card-body text-center">
+                      <h6 class="card-subtitle mb-2">Remaining</h6>
+                      <h4 class="card-title" id="remainingAmount">₹0</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <h6 class="mb-2">Budget Utilization</h6>
+                <div class="progress">
+                  <div class="progress-bar" id="budgetProgress" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                  <small>0%</small>
+                  <small id="progressPercentage">0%</small>
+                  <small>100%</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header">
+              <span><i class="fas fa-chart-bar me-2"></i>Expense Categories</span>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span><i class="fas fa-receipt me-2"></i>Recent Expenses</span>
+            </div>
+            <div class="card-body expense-list" id="recentExpenses">
+              <!-- Expenses will be loaded here -->
+              <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-white py-4 mt-5 shadow-sm">
+    <div class="container text-center">
+      <p class="text-muted mb-0">© 2023 Expense Tracker. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Global variables
+    let categoryChart = null;
+    const currentDate = new Date();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set current month display
+      document.getElementById('currentMonth').textContent = 
+        `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      
+      // Check if budget is set
+      checkBudgetStatus();
+      
+      // Load data
+      loadDashboardData();
+    });
+    
+    // Check if budget is set
+    async function checkBudgetStatus() {
+      try {
+        const response = await fetch('/summary');
+        const data = await response.json();
+        
+        if (data.budget > 0) {
+          document.getElementById('budgetSetup').style.display = 'none';
+          document.getElementById('mainContent').style.display = 'block';
+        } else {
+          document.getElementById('budgetSetup').style.display = 'block';
+          document.getElementById('mainContent').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error checking budget status:', error);
+      }
+    }
+    
+    // Load all dashboard data
+    async function loadDashboardData() {
+      try {
+        // Load summary data
+        const summaryResponse = await fetch('/summary');
+        const summaryData = await summaryResponse.json();
+        updateSummary(summaryData);
+        
+        // Load expenses data
+        const expensesResponse = await fetch('/expenses');
+        const expensesData = await expensesResponse.json();
+        updateRecentExpenses(expensesData.expenses);
+        updateCategoryChart(expensesData.expenses);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    }
+    
+    // Update summary section
+    function updateSummary(data) {
+      document.getElementById('budgetAmount').textContent = `₹${data.budget.toLocaleString()}`;
+      document.getElementById('spentAmount').textContent = `₹${data.spent.toLocaleString()}`;
+      document.getElementById('remainingAmount').textContent = `₹${(data.budget - data.spent).toLocaleString()}`;
+      
+      // Update progress bar
+      const percentage = data.budget > 0 ? (data.spent / data.budget) * 100 : 0;
+      const progressBar = document.getElementById('budgetProgress');
+      progressBar.style.width = `${percentage}%`;
+      progressBar.setAttribute('aria-valuenow', percentage);
+      
+      // Update percentage label
+      document.getElementById('progressPercentage').textContent = `${Math.round(percentage)}%`;
+    }
+    
+    // Update recent expenses list
+    function updateRecentExpenses(expenses) {
+      const container = document.getElementById('recentExpenses');
+      
+      if (expenses.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-4">
+            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No expenses recorded yet</p>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      expenses.slice(0, 5).forEach(expense => {
+        html += `
+          <div class="expense-item p-3 mb-2">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="mb-1">${expense.description || expense.category}</h6>
+                <small class="text-muted">${new Date(expense.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</small>
+              </div>
+              <div class="text-end">
+                <span class="badge category-badge">${expense.category}</span>
+                <h6 class="mt-1 text-danger">₹${expense.amount.toLocaleString()}</h6>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+    
+    // Update category chart
+    function updateCategoryChart(expenses) {
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      
+      // Group expenses by category
+      const categories = {};
+      expenses.forEach(expense => {
+        if (!categories[expense.category]) {
+          categories[expense.category] = 0;
+        }
+        // categories[expense.category] += expense.amount;
+        categories[expense.category] += Number(expense.amount);
+
+    });
+      
+      // Prepare data for chart
+      const labels = Object.keys(categories);
+      const data = Object.values(categories);
+      const backgroundColors = labels.map((_, index) => 
+        `hsl(${(index * 60) % 360}, 70%, 60%)`);
+      
+      // Destroy previous chart if exists
+      if (categoryChart) {
+        categoryChart.destroy();
+      }
+      
+      // Create new chart
+      categoryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Amount (₹)',
+            data: data,
+            backgroundColor: backgroundColors,
+            borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '₹' + value.toLocaleString();
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '₹' + context.raw.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Handle initial budget form submission
+    document.getElementById('initialBudgetForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      try {
+        const formData = new FormData(this);
+        const response = await fetch('/set-budget', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          // Reload the page to show main content
+          window.location.reload();
+        } else {
+          alert('Failed to set budget. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error setting budget:', error);
+        alert('An error occurred. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
