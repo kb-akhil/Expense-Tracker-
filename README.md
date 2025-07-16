@@ -8,7 +8,7 @@
 | Frontend   | HTML, CSS, Bootstrap, Chart.js |
 | Backend    | Flask (Python)                 |
 | Database   | AWS DynamoDB                   |
-| Deployment | AWS EC2 (Ubuntu/CentOS)        |
+| Deployment | AWS EC2         |
 | Cloud CLI  | AWS CLI + Boto3                |
 
  Features
