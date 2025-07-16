@@ -80,6 +80,6 @@ Create and download a .pem file
 python3 app.py
 
 🌐 Access the App
-Visit:http://<your-ec2-public-ip>:5000
+Visit:http://<your -ec2- public-ip4>:5000
 🎬 Demo Video:https://drive.google.com/file/d/1LgtqGVY-OXToTIYJkQYwhDD08WsHzrRV/view?usp=sharing
 
